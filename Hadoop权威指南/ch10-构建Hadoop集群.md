@@ -20,7 +20,7 @@
           mapred-env.sh|Bash脚本|配置运行MapReduce需要的环境变量，会覆盖hadoop-env.sh的设置
           yarn-env.sh|Bash脚本|配置运行yarn需要的环境变量，会覆盖hadoop-env.sh的设置
           core-site.xml|Hadoop配置XML|Hadoop Core配置项，比如HDFS、MapReduce和YARN常用的I/O设置等
-          hdfs-site.xml||Hadoop配置XML|Hadoop守护进程配置项，包括namenode、datanode和辅助namenode等
+          hdfs-site.xml|Hadoop配置XML|Hadoop守护进程配置项，包括namenode、datanode和辅助namenode等
           mapred-site.xml|Hadoop配置XML|MapReduce守护进程配置项，包括作业历史服务器
           yarn-site.xml|Hadoop配置XML|YARN守护进程配置项，包括资源管理器、web应用代理服务器和节点管理器
           hadoop-policy.xml|Hadoop配置XML|安全模式下运行Hadoop时的访问控制列表配置项
