@@ -104,8 +104,6 @@
           2. 调用yarn-daemon.sh脚本，在slaves文件列举的每台机器上启动node manager
      5. 在history server所在机器启动历史服务器
         ```sbin/mr-jobhistory-daemon.sh start historyserver```
-     6. 在history server所在机器启动historyserver
-        ```mr-jobhistory-daemon.sh start historyserver```
      * 启动脚本都有对应的 stop 脚本：stop-dfs.sh、stop-yarn.sh
 
   5. 创建用户目录
@@ -160,6 +158,7 @@
      yarn.nodemanager.aux-services|逗号分隔的目录名||节点管理器运行的附加服务列表，每项服务由属性yarn.nodemanager.auxservices.servicename.class所定义的类实现。默认不添加，一般设置为mapreduce_shuffle
      yarn.log-aggregation-enable|bull|False|是否启用任务运行日志聚合功能，将日志存放在HDFS系统上
      yarn.log-aggregation.retain-seconds|int|-1|任务运行日志聚集存放的时间，以秒为单位
+     yarn.log.server.url|url||任务运行日志聚集存放的服务器地址，与mapred-site.xml的mapreduce.jobhistory.address一致，前面要加http
      yarn.nodemanager.resource.memory-mb|int|8192|节点管理器运行的容器可分配的物理内存(MB)
      yarn.nodemanager.vmem-pmem-ratio|float|2.1|容器所占的虚拟内存与物理内存之比
      yarn.nodemanager.resource.cpuvcores|int|8|节点管理器运行的容器可分配的CPU核数
@@ -212,7 +211,6 @@
   -|-|-|-
   dfs.namenode.http-address|hdfs-site.xml|0.0.0.0:50070|namenode的HTTP服务器地址和端口
   dfs.namenode.http-bind-host|hdfs-site.xml||namenode的HTTP服务器绑定的地址
-  dfs.namenode.secondary.http-address|hdfs-site.xml|0.0.0.0:50090|辅助namenode的HTTP服务器地址和端口
   dfs.datanode.http.address|hdfs-site.xml|0.0.0.0:50075|datanode的HTTP服务器地址和端口
   yarn.resourcemanager.webapp.address|yarn-site.xml|${y.rm.hostname}:8088|资源管理器的HTTP服务器地址和端口
   yarn.nodemanager.webapp.address|yarn-site.xml|${y.nm.hostname}:8042|节点管理器的HTTP服务器地址和端口

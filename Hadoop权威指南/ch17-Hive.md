@@ -28,12 +28,19 @@
   * JDBC驱动：Hive提供了Type4(纯Java)的JDBC驱动，定义在org.apache.hadoop.jdbc.HiveDriver类中。在以jdbc:hive2://host:port/dbname形式配置JDBC URI后，Java应用程序可以在指定主机和端口连接到在另外一个进程中运行的Hive服务器
   * ODBC驱动：Hive的ODBC驱动允许支持ODBC的协议的应用程序连接到Hive
   ![Hive体系结构](http://static.zybuluo.com/BrandonLin/vu7slcsvxp2dkiyyt422hx2k/image_1aorqv69b184sbetjp6sni19e11g.png)
-* metastore：metastore是Hive元数据的集中存放地，包括两部分：服务和后台数据的存储
+* metadata：即元数据。元数据包含用Hive创建的database、tabel等的元信息。元数据存储在关系型数据库中，如Derby、MySQL等。
+* metastore：客户端连接metastore服务，metastore再去连接MySQL数据库来存取元数据。有了metastore服务，就可以有多个客户端同时连接，而且这些客户端不需要知道MySQL数据库的用户名和密码，只需要连接metastore服务即可。metastore有三种配置方式
   ![metastore三种配置](http://attachbak.dataguru.cn/attachments/forum/201212/01/2312139q13aqllkvzfffk2.png)
   * 内嵌metastore(embedded metastore)配置：默认情况下metastore服务和Hive服务运行在同一个JVM中，称为内嵌metastore配置。每次只有一个内嵌Derby数据库可以访问某个磁盘上的数据库文件，即一次只能为每个metastore打开一个Hive会话
   * 本地metastore(local metastore)配置：支持多会话需要一个独立的数据库，这种配置称为本地metastore配置。对于独立的metastore，一般使用MySQL
   * 远程metastore配置(remote metastore)：一个或多个metastore服务器和Hive服务运行在不同进程内
-  * metastore配置属性
+
+* 三种配置方式区别
+  1. 内嵌模式使用的是内嵌的Derby数据库来存储元数据，也不需要额外起Metastore服务。这个是默认的，配置简单，但是一次只能一个客户端连接，适用于用来实验，不适用于生产环境
+  2. 本地元存储和远程元存储都采用外部数据库来存储元数据，目前支持的数据库有：MySQL、Postgres、Oracle、MS SQL Server。一般使用MySQL
+  3. 本地元存储和远程元存储的区别是：本地元存储不需要单独起metastore服务，用的是跟hive在同一个进程里的metastore服务。远程元存储需要单独起metastore服务，然后每个客户端都在配置文件里配置连接到该metastore服务。远程元存储的metastore服务和hive运行在不同的进程里
+
+* metastore配置属性
 
     属性名称|类型|默认值|说明
     -|-|-|-
@@ -44,6 +51,8 @@
     javax.jdo.option.ConnectionUserName|string|APP|JDBC用户名
     javax.jdo.option.ConnectionPassword|string|mine|JDBC密码
     
+* 有metastore数据库的主机一般称为服务端，其他的主机称为客户端。主机端和客户端的配置文件有区别。具体看大数据平台搭建中hive的配置说明
+
 ##### 2. Hive与传统数据库对比
 * 读时模式和写时模式
   * 传统数据库表的模式是在数据加载时强制确定的。数据库在写入数据时对照模式进行检查，这一设计被称为“写时模式”(schema on write)；Hive对数据的验证并不在加载数据时进行，而是在查询时进行，称为“读时模式”(schema on read)
