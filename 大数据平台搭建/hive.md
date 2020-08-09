@@ -74,6 +74,10 @@
 * 添加数据仓库hive专用存储metastore
   ```
   mysql> CREATE DATABASE hive;
+  mysql> alter database hive character set latin1; # 不修改编码会出现hive无法删除表的情况
+
+  # 退出mysql后重启mysql服务让以上设置生效
+  # systemctl restart mysql.server
   ```
 * 添加远程用户hive，供hive使用
   ```
@@ -239,3 +243,58 @@ hive配置文件分为服务端和客户端来说明
 * 启动metastore远程数据库
   ```# hive --service metastore &```
 * 此后即可使用各种方式启动hive
+
+#### 配置和启动hiveserver2
+* 在准备运行hiveserver2服务器上的hive-site.xml添加配置，不需要在每台服务器都设置
+  ```
+  <property>
+      <name>hive.server2.thrift.port</name>
+      <value>10000</value>
+  </property>
+  <property>
+      <name>hive.server2.thrift.http.port</name>
+      <value>10001</value>
+      <description>Port number of HiveServer2 Thrift interface when hive.server2.transport.mode is 'http'.</description>
+  </property>
+  <property>
+      <name>hive.server2.thrift.bind.host</name>
+      <description>准备运行hiveserver2服务的主机地址，无需在每台服务器上都设置</description>
+      <value>hadoop101</value>
+  </property>
+  <property>
+      <name>hive.server2.thrift.client.user</name>
+      <value>hadoop</value>
+      <description>Username to use against thrift client</description>
+  </property>
+  <property>
+      <name>hive.server2.thrift.client.password</name>
+      <value>hadoop</value>
+  </property>
+  ```
+* 在hadoop配置文件core-site.xml添加配置，并分发到hadoop所有机器
+  ```
+  <property>
+      <name>hadoop.proxyuser.hadoop.hosts</name>
+      <value>*</value>
+  </property>
+  <property>
+      <name>hadoop.proxyuser.hadoop.groups</name>
+      <value>*</value>
+  </property>
+  ``` 
+  注意hadoop.proxyuser.$superuser.hosts中的superuser就是指hadoop的NameNode用户，另一个同理。比如我的用户名是hadoop，因此此处就是hadoop
+  配置完hadoop记得重启服务使配置生效
+* 在配置指定的服务器启动hiveserver2，后台运行
+  1. ```hive --service hiveserver2 &```
+     可能需要新开一个窗口
+  2. ```nohup hive --service hiveserver2```
+     无需新开窗口
+  
+  启动后查看jps，有RunJar服务就说明已启动
+* 使用beeline连接hiveserver2
+  ```
+  # beeline
+  # beeline> !connect jdbc:hive2://配置指定的hiveserver2服务器IP:10000
+  ```
+  输入指定账号密码即可登录，即可使用hivesql查询
+  ```!quit```命令退出beeline

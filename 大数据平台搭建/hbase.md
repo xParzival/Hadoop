@@ -88,18 +88,17 @@ Hive整合HBase后的使用场景：
 #### 使用方法
 * hive创建hbase中不存在的表
   ```
-  CREATE  TABLE stage.表名(
-      key string comment "hbase rowkey",
-      列名1 数据类型 comment "描述1", 
-      列名2 数据类型 comment "描述2",
-      ...)   
+  CREATE TABLE hive表名(
+      hive列名1 数据类型 comment "描述1", 
+      hive列名2 数据类型 comment "描述2",
+      ...)
   STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'   
   WITH SERDEPROPERTIES (
       "hbase.columns.mapping" = 
-      ":key,
-      列族1:列名1,
-      列族1:列名2,
-      列族2:列名3,
+      ":key, # 作为row_key的列，不一定是第一列，符合对应位置的列为row_key
+      hbase列族1:列名1,
+      hbase列族1:列名2,
+      hbase列族2:列名3,
       ...")   
   TBLPROPERTIES("hbase.table.name" = "hbase中的表名");
   ```
@@ -112,18 +111,36 @@ Hive整合HBase后的使用场景：
      ```
   2. 用hive创建外部表关联hbase中已存在的表
      ```
-     CREATE EXTERNAL TABLE stage.表名(
-         key string comment "hbase rowkey",
-         列名1 数据类型 comment "描述1", 
-         列名2 数据类型 comment "描述2",
+     CREATE EXTERNAL TABLE hive表名(
+         hive列名1 数据类型 comment "描述1", 
+         hive列名2 数据类型 comment "描述2",
          ...)   
      STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'   
      WITH SERDEPROPERTIES (
          "hbase.columns.mapping" = 
          ":key,
-         列族1:列名1,
-         列族1:列名2,
-         列族2:列名3,
+         hbase列族1:列名1,
+         hbase列族1:列名2,
+         hbase列族2:列名3,
          ...")   
      TBLPROPERTIES("hbase.table.name" = "hbase中的表名");
      ```
+* 利用hive的map类型映射hbase的列族，这样做hive的表中每一列即为一个列族的字典
+  ```
+  CREATE [EXTERNAL] TABLE 表名(
+     hive列名1 map<数据类型,数据类型> comment "描述1", 
+     hive列名2 map<数据类型,数据类型> comment "描述2",
+     ...)   
+  STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'   
+  WITH SERDEPROPERTIES (
+     "hbase.columns.mapping" = 
+     ":key,
+     hbase列族1:,
+     hbase列族2:,
+     ...")   
+  TBLPROPERTIES("hbase.table.name" = "hbase中的表名");
+  ```
+  当创建内部表时，插入数据时按照map对应关系插入
+  ```
+  INSERT INTO/OVERWRITE TABLE hive表名 select key列,列族1 map(hive列名1，hive列名2) from hive表;
+  ```

@@ -174,7 +174,7 @@
      mapreduce.jobhistory.webapp.address|主机名和端口号|0.0.0.0:19888|历史服务器的web UI地址
      mapreduce.map.memory.mb|int|1024|map容器所用的内存容量
      mapreduce.reduce.memory.mb|int|1024|reduce容器所用的内存容量
-     mpred.child.java.opts|String|-Xmx200m|JVM选项，用于启动运行map和reduce任务的容器进程
+     mapred.child.java.opts|String|-Xmx200m|JVM选项，用于启动运行map和reduce任务的容器进程
      mapreduce.map.java.opts|String|-Xmx200m|JVM选项，针对运行map任务的子进程
      mapreduce.reduce.java.opts|String|-Xmx200m|JVM选项，针对运行reduce任务的子进程
      mapreduce.map.cpu.vcores|int|1|分配给map任务的CPU核数

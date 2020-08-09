@@ -37,12 +37,12 @@ CREATE [EXTERNAL] TABLE [IF NOT EXISTS] 表名 (
 EXTERNAL参数即表示创建外部表
 * 行格式：
   ```
-  DELIMITED # 分隔符设置开始语句
+  [DELIMITED # 分隔符设置开始语句
   [FIELDS TERMINATED BY '分隔符' [ESCAPED BY char]] # 字段分隔符
   [COLLECTION ITEMS TERMINATED BY char] # 设置一个复杂类型(array,struct)字段的各个item之间的分隔符
   [MAP KEYS TERMINATED BY char] # 设置一个复杂类型(Map)字段的key value之间的分隔
   [LINES TERMINATED BY char] # 行与行之间的分隔符
-  [NULL DEFINED AS char] # 空值设置
+  [NULL DEFINED AS char]]# 空值设置
   [SERDE serde_name WITH SERDEPROPERTIE (
       property_name=property_value,
       property_name=property_value,
@@ -50,6 +50,21 @@ EXTERNAL参数即表示创建外部表
   ```
 * 文件格式：默认TEXTFILE，其他支持的文件格式有RCFILE、ORC、PARQUET、AVRO等，需要用对应的serde属性来设置
 
+例程：创建一个可导入csv文件的hive表，以','为分隔符，以"'"为字符串指示符
+```
+create table test(
+  col1 int,
+  col2 string,
+  col3 string,
+  ...
+)
+row format serde 'org.apache.hadoop.hive.serde2.OpenCSVSerde' # csv文件的serde解析器
+with serde properties(
+  "separatorChar" = ",", # 指定分隔符
+  "quoteChar" = "\'" # 指定字符串指示符
+)
+stored as textfile;
+```
 ### 查看表信息
 ```
 DESCRIBE [EXTENDED] [FORMATTED] 表名;
