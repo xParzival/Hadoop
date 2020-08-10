@@ -147,6 +147,7 @@
      dfs.hosts.exclude|文件名||存放不允许作为datanode连接namenode的主机列表的文件路径。默认不设置，即没有主机不允许连接namenode
      dfs.blocksize|int|134217728|设置HDFS数据块大小，以字节为单位。默认128MB
      dfs.datanode.du.reserved|int|0|datanode能够存储数据的空间大小，以字节为单位。默认为0即机器上所有闲置空间
+     dfs.permissions|bull|true|是否开启hdfs文件系统的访问权限
   
   1. yarn-site.xml
 

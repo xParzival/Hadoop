@@ -241,7 +241,7 @@ hive配置文件分为服务端和客户端来说明
 * 初始化数据库
   ```# schematool  -initSchema -dbType mysql```
 * 启动metastore远程数据库
-  ```# hive --service metastore &```
+  ```# nohup hive --service metastore &```
 * 此后即可使用各种方式启动hive
 
 #### 配置和启动hiveserver2
@@ -285,10 +285,7 @@ hive配置文件分为服务端和客户端来说明
   注意hadoop.proxyuser.$superuser.hosts中的superuser就是指hadoop的NameNode用户，另一个同理。比如我的用户名是hadoop，因此此处就是hadoop
   配置完hadoop记得重启服务使配置生效
 * 在配置指定的服务器启动hiveserver2，后台运行
-  1. ```hive --service hiveserver2 &```
-     可能需要新开一个窗口
-  2. ```nohup hive --service hiveserver2```
-     无需新开窗口
+  ```# nohup hive --service hiveserver2 &```
   
   启动后查看jps，有RunJar服务就说明已启动
 * 使用beeline连接hiveserver2
