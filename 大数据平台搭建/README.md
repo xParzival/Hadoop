@@ -1,4 +1,4 @@
-搭建版本Hadoop3.1.3+hive3.1.2+hbase2.0.0-alpha4+spark2.4.5+zookeeper3.6.1
+搭建版本Hadoop3.1.3+hive3.1.2+hbase2.0.0-alpha4+spark2.4.6+zookeeper3.6.1
 
 四台主机功能表：
 
@@ -10,6 +10,7 @@ MapReduce|-|-|-|historyserver
 metastore|-|-|-|mysql
 zookeeper|-|server1|server2|server3
 hbase|HMaster<br>HRegionServer|HRegionServer|HRegionServer|HRegionServer
+spark|slave|slave|master|slave
 
 启动顺序：
 1. hadoop
