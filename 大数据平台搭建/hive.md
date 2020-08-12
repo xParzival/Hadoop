@@ -127,7 +127,7 @@ hive配置文件分为服务端和客户端来说明
          <property>
              <name>javax.jdo.option.ConnectionURL</name>
              # 你的mysqlIP和port
-             <value>jdbc:mysql://mysqlIP:port/hive?allowMultiQueries=true&amp;useSSL=false&amp;verifyServerCertificate=false</value>
+             <value>jdbc:mysql://mysqlIP:port/hive?allowMultiQueries=true&amp;useSSL=false&amp;verifyServerCertificate=false&amp;allowPublicKeyRetrieval=true</value>
          </property>
          <property>
              <name>javax.jdo.option.ConnectionDriverName</name>

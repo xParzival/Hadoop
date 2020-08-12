@@ -23,7 +23,7 @@
   ```
 * 在/opt/module/zookeeper/data添加myid文件。文件内容为一个数字，对应zoo.cfg中server.x的x
   例如对于server.1对应的机器上添加
-  ```# echo "1" >> /opt/module/zookeeper/data```
+  ```# echo "1" >> /opt/module/zookeeper/data/myid```
 
 ### 启动zookeeper
 * 在指定了zookeeper的每台机器上执行
