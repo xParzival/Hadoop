@@ -50,7 +50,7 @@ hbase前提是有zookeeper
   <property>
       <name>hbase.unsafe.stream.capability.enforce</name>
       <value>false</value>
-  </property>
+  </property>hc
   ```
 * /opt/module/hbase/conf/regionservers
   ```
