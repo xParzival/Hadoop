@@ -65,6 +65,11 @@ with serde properties(
 )
 stored as textfile;
 ```
+### 复制表结构
+```
+CREATE TABLE 表名 LIKE 旧表名;
+```
+复制旧表的结构，但是不导入数据
 ### 查看表信息
 ```
 DESCRIBE [EXTENDED] [FORMATTED] 表名;
@@ -161,3 +166,140 @@ DESCRIBE [EXTENDED] [FORMATTED] 表名;
    INSERT INTO TABLE 表名
      SELECT 列1,列2,... WHERE 条件3;
    ```
+
+## hive表优化
+### 分区表
+分区是指按照数据表的某列或某些列分为多个区，区从形式上可以理解为文件夹，比如我们要收集某个大型网站的日志数据，一个网站每天的日志数据存在同一张表上，由于每天会生成大量的日志，导致数据表的内容巨大，在查询时进行全表扫描耗费的资源非常多。那其实这个情况下，我们可以按照日期对数据表进行分区，不同日期的数据存放在不同的分区，在查询时只要指定分区字段的值就可以直接从该分区查找
+因为分区在特定的区域（子目录）下检索数据，它起到了减少扫描成本的作用，提高查询效率
+分区分为单值分区和范围分区，单值分区又分为静态分区和动态分区
+分区一般用partitioned by关键字指定，分区表创建可以使用直接创建和CREATE TABLE LIKE，分区表不能用CREATE TABLE AS SELECT创建
+#### 单值分区
+单值分区即分区键按是否等于某个值划分数据。单值分区根据插入时是否需要手动指定分区可以分为
+1. 单值静态分区：导入数据时需要手动指定分区
+2. 单值动态分区：导入数据时，系统可以动态判断目标分区
+
+* 静态分区：导入数据时需要手动指定分区
+  * 创建静态分区：注意分区键不能与列重名
+    ```
+    CREATE [EXTERNAL] TABLE <table_name>
+    (<col_name> <data_type> [, <col_name> <data_type> ...])
+    -- 指定分区键和数据类型
+    PARTITIONED BY  (<partition_key> <data_type>, ...) 
+    [CLUSTERED BY ...] 
+    [ROW FORMAT <row_format>] 
+    [STORED AS TEXTFILE|ORC|CSVFILE]
+    [LOCATION '<file_path>']    
+    [TBLPROPERTIES ('<property_name>'='<property_value>', ...)];
+    ```
+  * 向静态分区写入数据
+    ```
+    load data [local] inpath '<filepath>' overwrite into table <table_name> partition (<partition_name=partition_value>);
+    ```
+    ```
+    insert overwrite/into table <tbl_name> partition (<partition_key=partition_value>,...) select <select_statement>;
+    ```
+* 动态分区：导入数据时，系统可以动态判断目标分区
+  * 创建动态分区
+    动态分区需要先开启功能，可以在配置文件开启，也可以set
+    ```
+    SET hive.exec.dynamic.partition=true;
+    SET hive.exec.dynamic.partition.mode=nonstrict; # 可以全部分区都是动态，否则必须有静态
+    SET hive.exec.max.dynamic.partitions.pernode = 1000;
+    SET hive.exec.max.dynamic.partitions=1000;
+    ```
+    创建方式与静态分区表完全一样，一张表可同时被静态和动态分区键分区，只是动态分区键需要放在静态分区键的后面（因为HDFS上的动态分区目录下不能包含静态分区的子目录），如下 spk 即 static partition key， dpk 即 dynamic partition key
+    ```
+    CREATE TABLE <table_name>
+    (<col_name> <data_type> [, <col_name> <data_type> ...])
+    PARTITIONED BY ([<spk> <data_type>, ... ,] <dpk> <data_type>, [<dpk>
+    <data_type>,...]);
+    ```
+  * 向动态分区表插入数据
+    ```
+    insert into/overwrite table <table_name> partition (<spk sp_value>,...,<dpk>,...)
+    select <select statement>;
+    ```
+    插入数据时，select语句多出的字段就会自动被作为动态分区键，因此一定要注意select语句后面字段的顺序，动态分区键必须在最后且顺序保持一致
+#### 范围分区
+单值分区每个分区对应于分区键的一个取值，而每个范围分区则对应分区键的一个区间，只要落在指定区间内的记录都被存储在对应的分区下。分区范围需要手动指定，分区的范围为前闭后开区间[最小值, 最大值)。最后出现的分区可以使用 MAXVALUE 作为上限，MAXVALUE 代表该分区键的数据类型所允许的最大值
+
+ ```
+ CREATE [EXTERNAL] TABLE <table_name>
+    (<col_name> <data_type>, <col_name> <data_type>, ...)
+    PARTITIONED BY RANGE (<partition_key1> <data_type>,<partition_key2> <data_type> ...) 
+        (PARTITION [<partition_name>] VALUES LESS THAN (<key1_cutoff,key2_cutoff,...>), 
+        [PARTITION [<partition_name>] VALUES LESS THAN (<key1_cutoff,key2_cutoff,...>),
+              ...]
+        PARTITION [<partition_name>] VALUES LESS THAN (<key1_cutoff,key2_cutoff,...>|<MAXVALUE1,MAXVALUE2,...>) 
+        )
+    [ROW FORMAT <row_format>] [STORED AS TEXTFILE|ORC|CSVFILE]
+    [LOCATION '<file_path>']    
+    [TBLPROPERTIE ('<property_name>'='<property_value>', ...)];
+ ```
+#### 查看分区
+ ```
+ show partitions <table_name>;
+ ```
+### 分桶表
+分桶是指定分桶表的某一列，让该列数据按照哈希取模的方式随机、均匀地分发到各个桶文件中。因为分桶操作需要根据某一列具体数据来进行哈希取模操作，故指定的分桶列必须基于表中的某一列（字段）。因为分桶改变了数据的存储方式，它会把哈希取模相同或者在某一区间的数据行放在同一个桶文件中。如此一来便可提高查询效率，如：我们要对两张在同一列上进行了分桶操作的表进行JOIN操作的时候，只需要对保存相同列值的桶进行JOIN操作即可。同时分桶也能让取样（Sampling）更高效
+#### 创建分桶表
+分桶表的建表有三种方式：直接建表，CREATE TABLE LIKE 和 CREATE TABLE AS SELECT，关键字为CLUSTERED BY
+ ```
+ CREATE [EXTERNAL] TABLE <table_name>
+    (<col_name> <data_type> [, <col_name> <data_type> ...])
+    [PARTITIONED BY ...] 
+    CLUSTERED BY (<col_name>) 
+        [SORTED BY (<col_name> [ASC|DESC] [, <col_name> [ASC|DESC]...])] 
+        INTO <num_buckets> BUCKETS  
+    [ROW FORMAT <row_format>] 
+    [STORED AS TEXTFILE|ORC|CSVFILE]
+    [LOCATION '<file_path>']    
+    [TBLPROPERTIES ('<property_name>'='<property_value>', ...)];
+ ```
+分桶键只能有一个即<col_name>。表可以同时分区和分桶，当表分区时，每个分区下都会有<num_buckets> 个桶。我们也可以选择使用 SORTED BY … 在桶内排序，排序键和分桶键无需相同。ASC 为升序选项，DESC 为降序选项，默认排序方式是升序。<num_buckets> 指定分桶个数，也就是表目录下小文件的个数
+* clustered by指定按哪一列进行分桶
+* sorted by指定按那些列进行排序，默认升序
+#### 向分桶表写入数据
+分桶表在创建的时候只会定义Scheme，且写入数据的时候不会自动进行分桶、排序，需要人工先进行分桶、排序后再写入数据，确保目标表中的数据和它定义的分布一致
+reduce的个数和分桶的个数要一致，主要有两种方法来保证
+1. 打开强制分桶开关
+   ```
+   SET hive.enforce.bucketing=true;
+   ```
+   这个选项可以自动控制上一轮reducer的数量从而适配bucket的个数，并且识别分桶键，然后可插入数据
+   ```
+   INSERT INTO/OVERWRITE TABLE <table_name>
+   SELECT <select_statement>
+   [SORT BY <sort_key> [ASC|DESC], [<sort_key> [ASC|DESC], ...]];
+   ```
+2. 手动设置reducer的个数与分桶数一致，插入数据时手动指定分桶键
+   ```
+   set mapreduce.job.reduces=<num_buckets>;
+   ```
+   * cluster by：不能指定排序方式，只能默认升序，且排序键与分桶键一致
+     ```
+     INSERT INTO/OVERWRITE TABLE <bucketed_table>
+     SELECT <select_statement>
+     CLUSTER BY <bucket_sort_key>;
+     ```
+   * distribute by+sort by：distribute by指定分桶键，sort by指定排序键，这样可以分桶键与排序键不同，且可以指定排序方式
+     ```
+     INSERT INTO/OVERWRITE TABLE <bucketed_table>
+     SELECT <select_statement>
+     DISTRIBUTE BY <bucket_sort_key>
+     [SORT BY <sort_key> [ASC|DESC],[<sort_key> [ASC|DESC],...];
+     ```
+   
+#### 分桶总结
+分桶公式：
+bucket = hash_function(bucketing_column) mod num_buckets
+* 分桶字段的选择
+  1. int类型字段比较友好
+  2. 取hash后各分区块数据量比较均匀的字段
+  3. join的连接字段
+
+  当join连接的字段值取hash不够均匀时,多取一个其它字段作为分桶字段
+* BUCKETS数量的选择
+  1. 当数据量够大时设置为约等于≈128M的倍数
+  2. 当数据量不够大时考虑,计算的并行度（比如129MB设置2或者4）
+  bucket个数会决定在该表或者该表的分区对应的hdfs目录下生成对应个数的文件,而mapreduce的个数是根据文件块的个数据确定的map个数

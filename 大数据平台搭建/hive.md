@@ -1,7 +1,7 @@
 # hive
 ## 搭建hive环境
 ### 安装mysql
-版本mysql8.0.21，作为hive的metastore
+版本mysql5.7.30，作为hive的metastore
 * 安装包解压到/opt/module/，以下称根目录为/opt/module/mysql
 * 创建/opt/module/mysql/data作为mysql存储数据的文件夹
 * 创建系统账户mysql，并赋予相应权限，用于运行mysql服务
@@ -19,6 +19,7 @@
   datadir=/opt/module/mysql/data
   socket=/tmp/mysql.sock
   port=3306
+  character_set_server=latin1 # 如果为utf-8可能会出现删除表时卡死
   [mysqld_safe]
   # 注释掉mysqld_safe的配置
   ```
